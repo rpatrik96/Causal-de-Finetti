@@ -16,15 +16,46 @@ def scm_bivariate_continuous(num_env: int, num_sample: int) -> Dict:
     data = {}
 
     num_var = 2
+    # todo: change this for cause/mechanism variability
+    # collapse the num_env dimension and make that data a copy
+    exchg_mode:int = 0
+
+    # here N[0,:] is theta, N[1,:] is psi, N is the concatenation of the two, and sample from a prior which is uniform[-1, 1]. 
+    # Then Nprime is a sample based on identical N for each environment that simulates p(xi, yi | theta, psi). 
+    # and xi, yi is the a functional mapping ANprime where A determines the causation direction.
     N = np.random.uniform(-1, 1, (num_var, num_env))
     N = np.repeat(N[:, :, np.newaxis], num_sample, axis=2)
     Nprime = np.random.laplace(N)
+
+    # Define a switch variable to determine the sampling mode
+    switch_var = np.random.choice([0, 1, 2])
+    
+    # Create a new N array with the same shape as before
+    N_new = np.zeros_like(N)
+    
+    if switch_var == 0:
+        # Both N[0,:] and N[1,:] are sampled from uniform
+        N_new = N
+    elif switch_var == 1:
+        # Only N[0,:] is random, N[1,:] is constant across environments
+        N_new[0, :, :] = N[0, :, :]
+        N_new[1, :, :] = N[1, 0, :][:, np.newaxis]
+    else:  # switch_var == 2
+        # Only N[1,:] is random, N[0,:] is constant across environments
+        N_new[0, :, :] = N[0, 0, :][:, np.newaxis]
+        N_new[1, :, :] = N[1, :, :]
+    
+    # Replace the original N with the new N
+    N = N_new
+    
+    
 
     mode = np.random.choice(3)
     if mode == 0:
         A = np.tril(np.random.randint(1, 10, size=(num_var, num_var)), 0)
         A[0, 0] = 1
         data['true_structure'] = set([(0, 1)])
+
     elif mode == 1:
         A = np.triu(np.random.randint(1, 10, size=(num_var, num_var)), 0)
         A[1, 1] = 1
@@ -35,6 +66,17 @@ def scm_bivariate_continuous(num_env: int, num_sample: int) -> Dict:
 
     D = np.einsum('ij, jkh->ikh', A, Nprime)
 
+
+    if exchg_mode ==0: #CdF
+        pass
+    elif exchg_mode ==1: #cause var
+        pass
+        # collapse the cause dimension for envs
+    elif exchg_mode ==2: #mech var
+        pass
+        
+
+    # todo: I need to understand this part to figure out how the data is generated
     env_idx = np.random.choice(num_env, int(num_env/2), replace = False)
     env_mask = np.zeros((num_var, num_env, num_sample), dtype = bool)
     env_mask[:, env_idx, :] = True
