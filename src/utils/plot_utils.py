@@ -42,7 +42,7 @@ def correct_counts_plotter(correct_counts, save_directory, data_generating_funct
         sns.lineplot(x='Env', y='FCI', marker='X', data=correct_counts, label='FCI', ax = ax)
         sns.lineplot(x='Env', y='GES', marker = 'd', data=correct_counts, label='GES', ax=ax)
         sns.lineplot(x='Env', y='NOTEARS', marker = '*', data=correct_counts, label='NOTEARS', ax=ax)
-        sns.lineplot(x='Env', y='CD-NOD', data=correct_counts, marker='^', label='CD-NOD', ax=ax)
+        # sns.lineplot(x='Env', y='CD-NOD', data=correct_counts, marker='^', label='CD-NOD', ax=ax)
         sns.lineplot(x='Env', y='DirectLinGAM', data=correct_counts, marker = 's', label ='DirectLinGAM', ax = ax)
         sns.lineplot(x='Env', y='Random', data=correct_counts, linestyle = '--', color='k', label = 'Random', ax=ax)
         # ax.set_title("Proportion correct causal direction detected")
