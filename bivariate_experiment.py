@@ -1,6 +1,6 @@
 from typing import Callable
 from src.models.causaldf import *
-from src.models.cdnod import *
+# from src.models.cdnod import *
 from src.models.directlingam import *
 from src.models.fci import *
 from src.models.ges import *
@@ -24,7 +24,7 @@ def bivariate_multienv(data_generating_function: Callable, plot_dir: str, method
                'computation_time': {'num_samples': [2*env for env in env_range]}
                }
     functions = {'Causal-de-Finetti': run_causaldf_bivariate,
-                 'CD-NOD': run_cd_nod,
+                #  'CD-NOD': run_cd_nod,
                  'DirectLinGAM': run_directLinGAM,
                  'FCI': run_fci,
                  'GES': run_ges,
@@ -43,7 +43,7 @@ def bivariate_multienv(data_generating_function: Callable, plot_dir: str, method
             # If data makes cdnod fail to produce valid results, then try again
             while None in estimates or estimates == []:
                 try:
-                    data = data_generating_function(num_env = env, num_sample = 2)
+                    data = data_generating_function(num_env = env, num_sample = 2, exchg_mode = 2)
                     for method in methods:
                         estimate, time = functions[method](data)
                         estimates.append(estimate)
