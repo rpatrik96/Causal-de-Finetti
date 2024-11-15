@@ -43,7 +43,7 @@ def bivariate_multienv(data_generating_function: Callable, plot_dir: str, method
             # If data makes cdnod fail to produce valid results, then try again
             while None in estimates or estimates == []:
                 try:
-                    data = data_generating_function(num_env = env, num_sample = 2, exchg_mode = 2)
+                    data = data_generating_function(num_env = env, num_sample = 2, exchg_mode = 0)
                     for method in methods:
                         estimate, time = functions[method](data)
                         estimates.append(estimate)
