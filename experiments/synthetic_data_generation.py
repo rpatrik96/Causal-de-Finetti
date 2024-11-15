@@ -33,7 +33,7 @@ def scm_bivariate_continuous(num_env: int, num_sample: int, exchg_mode: Optional
     
     if exchg_mode == 0:
         # Both N[0,:] and N[1,:] are sampled from uniform
-        new_cdf_param_samples = cdf_params
+        new_cdf_param_samples = cdf_param_samples
     elif exchg_mode == 1:
         # Only N[0,:] is random, N[1,:] is constant across environments
         new_cdf_param_samples[0, :, :] = cdf_param_samples[0, :, :] # we need to copy the samples
