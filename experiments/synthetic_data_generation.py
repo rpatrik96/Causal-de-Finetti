@@ -1,10 +1,10 @@
 import numpy as np
-from typing import Dict
+from typing import Dict, Optional
 import networkx as nx
 import random
 
 
-def scm_bivariate_continuous(num_env: int, num_sample: int) -> Dict:
+def scm_bivariate_continuous(num_env: int, num_sample: int, exchg_mode: Optional[int] = None) -> Dict:
     """
     Create Binary Exchangeable Data for Bivariate Graph
     :param seed:
@@ -16,15 +16,46 @@ def scm_bivariate_continuous(num_env: int, num_sample: int) -> Dict:
     data = {}
 
     num_var = 2
-    N = np.random.uniform(-1, 1, (num_var, num_env))
-    N = np.repeat(N[:, :, np.newaxis], num_sample, axis=2)
-    Nprime = np.random.laplace(N)
+
+    # here N[0,:] is theta, N[1,:] is psi, N is the concatenation of the two, and sample from a prior which is uniform[-1, 1]. 
+    # Then Nprime is a sample based on identical N for each environment that simulates p(xi, yi | theta, psi). 
+    # and xi, yi is the a functional mapping ANprime where A determines the causation direction.
+    cdf_params = np.random.uniform(-1, 1, (num_var, num_env))
+    cdf_params = np.repeat(cdf_params[:, :, np.newaxis], num_sample, axis=2)
+    cdf_param_samples = np.random.laplace(cdf_params)
+
+    # Define a switch variable to determine the sampling mode
+    if exchg_mode is None:
+        exchg_mode = np.random.choice([0, 1, 2])
+    
+    # Create a new N array with the same shape as before
+    new_cdf_param_samples = np.zeros_like(cdf_params)
+    
+    if exchg_mode == 0:
+        # Both N[0,:] and N[1,:] are sampled from uniform
+        new_cdf_param_samples = cdf_param_samples
+    elif exchg_mode == 1:
+        # Only N[0,:] is random, N[1,:] is constant across environments
+        new_cdf_param_samples[0, :, :] = cdf_param_samples[0, :, :] # we need to copy the samples
+        new_cdf_param_samples[1, :, :] = cdf_params[1, :, :] # but keep psi constant across environments (ie, delta prior   )
+
+      
+    elif exchg_mode == 2:
+        # Only N[1,:] is random, N[0,:] is constant across environments
+        new_cdf_param_samples[0, :, :] = cdf_params[0, :, :] # we need to copy the samples
+        new_cdf_param_samples[1, :, :] = cdf_param_samples[1, :, :]    
+    
+    # copy the new cdf_param_samples to the original cdf_param_samples  
+    cdf_param_samples = new_cdf_param_samples
+
+    
 
     mode = np.random.choice(3)
     if mode == 0:
         A = np.tril(np.random.randint(1, 10, size=(num_var, num_var)), 0)
         A[0, 0] = 1
         data['true_structure'] = set([(0, 1)])
+
     elif mode == 1:
         A = np.triu(np.random.randint(1, 10, size=(num_var, num_var)), 0)
         A[1, 1] = 1
@@ -33,13 +64,16 @@ def scm_bivariate_continuous(num_env: int, num_sample: int) -> Dict:
         A = np.eye(2)
         data['true_structure'] = set([])
 
-    D = np.einsum('ij, jkh->ikh', A, Nprime)
+    D = np.einsum('ij, jkh->ikh', A, cdf_param_samples)
 
+        
+
+    # todo: I need to understand this part to figure out how the data is generated
     env_idx = np.random.choice(num_env, int(num_env/2), replace = False)
     env_mask = np.zeros((num_var, num_env, num_sample), dtype = bool)
     env_mask[:, env_idx, :] = True
     B = (A - np.eye(num_var))*np.random.randint(1, 10)
-    D += np.einsum('ij, jkh->ikh', B, Nprime**2) * env_mask
+    D += np.einsum('ij, jkh->ikh', B, cdf_param_samples**2) * env_mask
 
 
     Data = D.reshape(num_var, -1).T
